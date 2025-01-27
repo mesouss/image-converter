@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // Use PORT from environment variable or default to 3000
 
 // Middleware to parse JSON requests
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -18,6 +18,12 @@ app.post('/convert', async (req, res) => {
 
         if (!image || !format) {
             return res.status(400).send({ error: 'Image data or format missing' });
+        }
+
+        // Supported formats validation
+        const supportedFormats = ['jpeg', 'png', 'webp', 'tiff'];
+        if (!supportedFormats.includes(format)) {
+            return res.status(400).send({ error: `Unsupported format. Supported formats: ${supportedFormats.join(', ')}` });
         }
 
         // Decode the base64 image
@@ -45,5 +51,5 @@ app.post('/convert', async (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });

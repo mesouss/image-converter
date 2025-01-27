@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Converter</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #4CAF50, #f4f4f9);
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 50px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            overflow: hidden;
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+        #fileUploader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #4CAF50;
+            border-radius: 12px;
+            padding: 40px;
+            margin: 20px 0;
+            text-align: center;
+            color: #888;
+            font-size: 1.2rem;
+            background: #f3fff3;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #fileUploader:hover {
+            background: #d4fbd4;
+            border-color: #3e9e43;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #3e9e43;
+        }
+        select {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        .output {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .output a {
+            display: inline-block;
+            margin: 5px 0;
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        .output a:hover {
+            color: #3e9e43;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .progress-bar div {
+            height: 20px;
+            width: 0;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            border-radius: 8px;
+        }
+        .uploaded-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .uploaded-images img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #4CAF50;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Image Conversion Tool</h1>
+        <div id="fileUploader">Drop Your Files Here or Click to Upload</div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;">
+        <label for="formatSelect">Select Output Format:</label>
+        <select id="formatSelect">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+            <option value="jpg">JPG</option>
+            <option value="svg">SVG</option>
+            <option value="gif">GIF</option>
+            <option value="bmp">BMP</option>
+            <option value="tiff">TIFF</option>
+            <option value="webp">WEBP</option>
+            <option value="heic">HEIC</option>
+            <option value="pdf">PDF</option>
+        </select>
+        <div class="actions">
+            <button id="convertFiles">Convert</button>
+            <button id="clearQueue">Clear Queue</button>
+        </div>
+        <div class="uploaded-images" id="uploadedImages"></div>
+        <div class="progress-bar" id="progressBar"><div></div></div>
+        <div class="output" id="output"></div>
+    </div>
+
+    <script>
+        const fileUploader = document.getElementById('fileUploader');
+        const fileInput = document.getElementById('fileInput');
+        const uploadedImages = document.getElementById('uploadedImages');
+        const progressBar = document.getElementById('progressBar').firstElementChild;
+        const output = document.getElementById('output');
+
+        fileUploader.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            uploadedImages.innerHTML = '';
+            Array.from(fileInput.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    uploadedImages.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        document.getElementById('convertFiles').addEventListener('click', async () => {
+            const files = fileInput.files;
+            const format = document.getElementById('formatSelect').value;
+
+            if (!files.length) {
+                output.innerHTML = '<p style="color: red;">Please select files to convert.</p>';
+                return;
+            }
+
+            output.innerHTML = '';
+            let completed = 0;
+            progressBar.style.width = '0';
+
+            for (const file of files) {
+                const reader = new FileReader();
+                reader.onload = async function (event) {
+                    const response = await fetch('https://image-converter-8iwl.onrender.com/convert', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            image: event.target.result,
+                            format: format
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const link = document.createElement('a');
+                        link.href = data.convertedImageUrl;
+                        link.download = `${file.name.split('.')[0]}.${format}`;
+                        link.innerText = `Download ${file.name.split('.')[0]}.${format}`;
+                        link.className = 'download-link';
+                        output.appendChild(link);
+                        output.appendChild(document.createElement('br'));
+                    } else {
+                        output.innerHTML += `<p style="color: red;">Conversion failed for ${file.name}</p>`;
+                    }
+
+                    completed++;
+                    progressBar.style.width = `${(completed / files.length) * 100}%`;
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('clearQueue').addEventListener('click', () => {
+            fileInput.value = '';
+            uploadedImages.innerHTML = '';
+            output.innerHTML = '';
+            progressBar.style.width = '0';
+        });
+    </script>
+</body>
+</html>
